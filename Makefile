@@ -6,6 +6,7 @@ else
 NVCC_FLAGS  = -O3 --std=c++03
 endif
 LD_FLAGS    = -lcudart
+CUBLAS_FLAG	= -lcublas
 EXE	        = sgemm-tiled
 OBJ	        = main.o support.o
 
@@ -18,7 +19,7 @@ support.o: support.cu support.h
 	$(NVCC) -c -o $@ support.cu $(NVCC_FLAGS)
 
 $(EXE): $(OBJ)
-	$(NVCC) $(OBJ) -o $(EXE) $(LD_FLAGS)
+	$(NVCC) $(OBJ) -o $(EXE) $(LD_FLAGS) $(CUBLAS_FLAG)
 
 clean:
 	rm -rf *.o $(EXE)

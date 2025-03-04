@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#define TILE_SIZE 16
+#define TILE_SIZE 32
 
 __global__ void basicsgemm(int m, int n, int k, const float *A, const float *B, float* C) {
 
@@ -75,7 +75,6 @@ __global__ void tiledsgemm(int m, int n, int k, const float *A, const float *B, 
 void tiledSgemm(int m, int n, int k, const float *A, const float *B, float *C)
 {
     // Initialize thread block and kernel grid dimensions ---------------------
-    printf("TILED MULTIPLY HELL YEAH\n");
     const unsigned int BLOCK_SIZE = TILE_SIZE;
 	
     /*************************************************************************/
@@ -99,7 +98,6 @@ void tiledSgemm(int m, int n, int k, const float *A, const float *B, float *C)
 void basicSgemm(int m, int n, int k, const float *A, const float *B, float *C)
 {
         const unsigned int BLOCK_SIZE = TILE_SIZE;
-        printf("BASIC MULTIPLY HELL NAH\n");
         /*************************************************************************/
         //INSERT CODE HERE
         dim3 threads_per_block(BLOCK_SIZE, BLOCK_SIZE, 1);
