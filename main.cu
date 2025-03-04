@@ -3,18 +3,6 @@
 #include "kernel.cu"
 #include "support.h"
 
-void sysoutMatrix(float *A, int n, int m)
-{
-    for(int i=0;i<n;i++)
-    {
-        for(int j=0;j<m;j++)
-        {
-            printf("%lf ",A[i*m+j]);
-        }
-        printf("\n");
-    }
-}
-
 int main (int argc, char *argv[])
 {
 
@@ -94,19 +82,13 @@ int main (int argc, char *argv[])
     //INSERT CODE HERE
     cudaMemcpy(A_d, A_h, sizeof(float)*A_sz, cudaMemcpyHostToDevice);
     cudaMemcpy(B_d, B_h, sizeof(float)*B_sz, cudaMemcpyHostToDevice);
-    cudaMemcpy(C_d, C_h, sizeof(float)*C_sz, cudaMemcpyHostToDevice);
     /*************************************************************************/
     
     cudaDeviceSynchronize();
     stopTime(&timer); printf("%f s\n", elapsedTime(timer));
 
-    // printf("Matrix A is======\n");
-    // sysoutMatrix(A_h,matArow,matAcol);
-    // printf("Matrix B is======\n");
-    // sysoutMatrix(B_h,matBrow,matBcol);
-
     // Launch kernel using standard sgemm interface ---------------------------
-    printf("Launching kernel..."); fflush(stdout);
+    printf("Launching basic mat mul kernel..."); fflush(stdout);
     startTime(&timer);
     basicSgemm(matArow, matBcol, matBrow, A_d, B_d, C_d);
 
@@ -120,20 +102,37 @@ int main (int argc, char *argv[])
 
     /*************************************************************************/
     //INSERT CODE HERE
-    cudaMemcpy(A_h, A_d, sizeof(float)*A_sz, cudaMemcpyDeviceToHost);
-    cudaMemcpy(B_h, B_d, sizeof(float)*B_sz, cudaMemcpyDeviceToHost);
     cudaMemcpy(C_h, C_d, sizeof(float)*C_sz, cudaMemcpyDeviceToHost);
     /*************************************************************************/
 
     cudaDeviceSynchronize();
     stopTime(&timer); printf("%f s\n", elapsedTime(timer));
 
-    // Verify correctness -----------------------------------------------------
 
-    printf("Verifying results..."); fflush(stdout);
+    
+    
+    cudaFree(C_d);
+    cudaMalloc((void**) &C_d, sizeof(float)*C_sz);
 
-    verify(A_h, B_h, C_h, matArow, matAcol, matBcol);
+    printf("Launching optimized mat mul kernel..."); fflush(stdout);
+    startTime(&timer);
+    tiledSgemm(matArow, matBcol, matBrow, A_d, B_d, C_d);
 
+    cuda_ret = cudaDeviceSynchronize();
+    if(cuda_ret != cudaSuccess) printf("Unable to launch kernel");
+    stopTime(&timer); printf("%f s\n", elapsedTime(timer));
+
+    // Copy device variables from host ----------------------------------------
+    printf("Copying data from device to host..."); fflush(stdout);
+    startTime(&timer);
+
+    /*************************************************************************/
+    //INSERT CODE HERE
+    cudaMemcpy(C_h, C_d, sizeof(float)*C_sz, cudaMemcpyDeviceToHost);
+    /*************************************************************************/
+
+    cudaDeviceSynchronize();
+    stopTime(&timer); printf("%f s\n", elapsedTime(timer));
 
     // Free memory ------------------------------------------------------------
 

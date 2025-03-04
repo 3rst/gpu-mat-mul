@@ -2,7 +2,24 @@
 
 #define TILE_SIZE 16
 
-__global__ void mysgemm(int m, int n, int k, const float *A, const float *B, float* C) {
+__global__ void basicsgemm(int m, int n, int k, const float *A, const float *B, float* C) {
+
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+
+    //Naive implementation
+    if(row<m && col<n)
+    {
+        float pValue = 0.0f;
+        for(int l=0;l<k;++l)
+        {
+            pValue+=A[row*k+l]*B[l*n+col];
+        }
+        C[row*n+col]=pValue;
+    }
+}
+
+__global__ void tiledsgemm(int m, int n, int k, const float *A, const float *B, float* C) {
 
     /********************************************************************
      *
@@ -26,13 +43,11 @@ __global__ void mysgemm(int m, int n, int k, const float *A, const float *B, flo
     
     // /*************************************************************************/
     float pValue = 0;
-    // //You have to load memory on each phase
+    //You have to load memory on each phase
     for(int p=0; p<((k+blockDim.x-1)/blockDim.x); p++)
     {
-        //A_row is just row
         int A_col = threadIdx.x + p*blockDim.x;
         int B_row = threadIdx.y + p*blockDim.y;
-        //B_col is just col
 
         //For each phase
         //Copy elements onto shared memory, A thread can 
@@ -54,25 +69,13 @@ __global__ void mysgemm(int m, int n, int k, const float *A, const float *B, flo
            C[row * n + col] = pValue;
         }
     }
-
-    //Naive implementation
-    // if(row<m && col<n)
-    // {
-    //     float pValue = 0.0f;
-    //     for(int l=0;l<k;++l)
-    //     {
-    //         pValue+=A[row*k+l]*B[l*n+col];
-    //     }
-    //     C[row*n+col]=pValue;
-    //     printf("\nValue for index i: %d, j: %d is %lf, value C[%d] in GPU: %lf", row, col, pValue, row*n+col, C[row*n+col]);
-    // }
 }
 
 //m = Arow, n=Bcol, k=Brow
-void basicSgemm(int m, int n, int k, const float *A, const float *B, float *C)
+void tiledSgemm(int m, int n, int k, const float *A, const float *B, float *C)
 {
     // Initialize thread block and kernel grid dimensions ---------------------
-
+    printf("TILED MULTIPLY HELL YEAH\n");
     const unsigned int BLOCK_SIZE = TILE_SIZE;
 	
     /*************************************************************************/
@@ -85,7 +88,7 @@ void basicSgemm(int m, int n, int k, const float *A, const float *B, float *C)
 
     /*************************************************************************/
     //INSERT CODE HERE
-	mysgemm <<<num_blocks, threads_per_block>>> (m,n,k,A,B,C);
+	tiledsgemm <<<num_blocks, threads_per_block>>> (m,n,k,A,B,C);
     /*************************************************************************/
     cudaError_t err = cudaDeviceSynchronize();
     if (err != cudaSuccess) {
@@ -93,4 +96,25 @@ void basicSgemm(int m, int n, int k, const float *A, const float *B, float *C)
     }
 }
 
+void basicSgemm(int m, int n, int k, const float *A, const float *B, float *C)
+{
+        const unsigned int BLOCK_SIZE = TILE_SIZE;
+        printf("BASIC MULTIPLY HELL NAH\n");
+        /*************************************************************************/
+        //INSERT CODE HERE
+        dim3 threads_per_block(BLOCK_SIZE, BLOCK_SIZE, 1);
+        dim3 num_blocks(((n+BLOCK_SIZE-1)/BLOCK_SIZE), ((m+BLOCK_SIZE-1)/BLOCK_SIZE), 1);
+        /*************************************************************************/
+    
+        // Invoke CUDA kernel -----------------------------------------------------
+    
+        /*************************************************************************/
+        //INSERT CODE HERE
+        basicsgemm <<<num_blocks, threads_per_block>>> (m,n,k,A,B,C);
+        /*************************************************************************/
+        cudaError_t err = cudaDeviceSynchronize();
+        if (err != cudaSuccess) {
+            printf("CUDA error: %s\n", cudaGetErrorString(err));
+        }
+}
 
