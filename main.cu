@@ -65,13 +65,10 @@ int main (int argc, char *argv[])
     printf("Allocating device variables..."); fflush(stdout);
     startTime(&timer);
 
-    /*************************************************************************/
-    //INSERT CODE HERE
+    //Allocate device memory
     cudaMalloc((void**) &A_d, sizeof(float)*A_sz);
     cudaMalloc((void**) &B_d, sizeof(float)*B_sz);
     cudaMalloc((void**) &C_d, sizeof(float)*C_sz);
-
-    /*************************************************************************/
 	
     cudaDeviceSynchronize();
     stopTime(&timer); printf("%f s\n", elapsedTime(timer));
@@ -80,11 +77,8 @@ int main (int argc, char *argv[])
     // Copy host variables to device ------------------------------------------
     startTime(&timer);
 	
-    /*************************************************************************/
-    //INSERT CODE HERE
     cudaMemcpy(A_d, A_h, sizeof(float)*A_sz, cudaMemcpyHostToDevice);
     cudaMemcpy(B_d, B_h, sizeof(float)*B_sz, cudaMemcpyHostToDevice);
-    /*************************************************************************/
     cudaDeviceSynchronize();
     stopTime(&timer); 
     copy_to_gpu = elapsedTime(timer);
@@ -133,12 +127,9 @@ int main (int argc, char *argv[])
 
     printf("Total time for optimized kernel: %f, copy to gpu: %f, kernel: %f, copy from gpu: %f\n", copy_to_gpu + kernel_computation + copy_from_gpu, copy_to_gpu, kernel_computation, copy_from_gpu);
 
-    /*************************************************************************/
-    //INSERT CODE HERE
     cudaFree(A_d);
     cudaFree(B_d);
     cudaFree(C_d);
-    /*************************************************************************/
 
     /* CUBLAS MATRIX MULTIPLY, THE BIG APPLE OF MATMUL */
     cublasHandle_t handle;
@@ -184,4 +175,3 @@ int main (int argc, char *argv[])
 
     return 0;
 }
-
